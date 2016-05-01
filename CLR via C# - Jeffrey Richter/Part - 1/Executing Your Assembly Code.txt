@@ -1,0 +1,113 @@
+---------------------------------------------
+Executing Your Assembly Code
+---------------------------------------------
+
+
+Program Database File - PDB
+
+turn of the Suppress JIT Optimization On Module to not to force the JIT Compiler to track the IL to Native Code Information
+
+In this managed Environment compiling the code is done in two phases
+
+First - the compiler passes over the source code doing as much as work as possible in producing IL. 
+Second - But to execute the code, the IL itself must be compiled
+into native CPU instructions at run time, requiring more non-shareable memory to be allocated and
+requiring additional CPU time to do the wor
+
+If you too are skeptical, you should certainly build some applications and test the performance for
+yourself
+
+
+Some ways so that managed code can outperform unmanaged code :
+
+ - A JIT compiler can determine if the application is running on an Intel Pentium 4 CPU and produce native code that takes advantage of any special instructions offered by the Pentium 4. Usually, unmanaged applications are compiled for the lowest-common-denominator CPU and avoid using special instructions that would give the application a performance boost.
+
+
+ - A JIT compiler can determine when a certain test is always false on the machine that it is running on. For example, consider a method that contains the following code. 
+
+	if (numberOfCPUs > 1) {
+	...
+	}
+	This code could cause the JIT compiler to not generate any CPU instructions if the host
+	machine has only one CPU. In this case, the native code would be fine-tuned for the host
+	machine; the resulting code is smaller and executes faster.
+
+- The CLR could profile the code’s execution and recompile the IL into native code while the application runs. The recompiled code could be reorganized to reduce incorrect branch predictions depending on the observed execution patterns. Current versions of the CLR do not do
+this, but future versions might
+
+
+NGen.exe compiles all of an Assembly's IL code into Native Code and saves the resulting Native Code to a file on a Disk.
+At runtime when an assembly is loaded the CLR Checks whether a precompiled version of an assembly exists.
+
+
+------------------
+IL And Verification
+
+IL is Stack Based. which means all of the instructions oush operands onto an execution stack and pop results off the stack. Because IL offers no instructions to manipulate registers, it is easy for people to create new language and compilers that targets the CLR.
+
+the biggest benefit of IL isn’t that it abstracts away the underlying CPU. The biggest
+benefit IL provides is application robustness and security. While compiling IL into native CPU instructions, the CLR performs a process called verification. Verification examines the high-level IL code and
+ensures that everything the code does is safe. For example, verification checks that every method is
+called with the correct number of parameters, that each parameter passed to every method is of the
+correct type, that every method’s return value is used properly, that every method has a return statement, and so on. The managed module’s metadata includes all of the method and type information
+used by the verification process
+
+In Windows, each process has its own virtual address space. Separate address spaces are necessary because you can’t trust an application’s code. It is entirely possible (and unfortunately, all too
+common) that an application will read from or write to an invalid memory address. By placing each
+Windows process in a separate address space, you gain robustness and stability; one process can’t
+adversely affect another process.
+
+ This means that you can run multiple
+managed applications in a single Windows virtual address space
+
+Because Windows processes require a lot of operating system resources, having many of them
+can hurt performance and limit available resources. Reducing the number of processes by running
+multiple applications in a single operating system process can improve performance, require fewer
+resources, and be just as robust as if each application had its own process. This is another benefit of
+managed code as compared to unmanaged code.
+
+The CLR does, in fact, offer the ability to execute multiple managed applications in a single operating system process. Each managed application executes in an AppDomain. By default, every managed
+EXE file will run in its own separate address space that has just one AppDomain. However, a process
+hosting the CLR (such as Internet Information Services [IIS] or Microsoft SQL Server) can decide to run
+AppDomains in a single operating system process
+
+
+-------
+Unsafe Code
+
+the C# compiler requires that all
+methods that contain unsafe code be marked with the unsafe keyword. In addition, the C# compiler
+requires you to compile the source code by using the /unsafe compiler switch
+
+When the JIT compiler attempts to compile an unsafe method, it checks to see if the assembly
+containing the method has been granted the System.Security.Permissions.Security Permission with the System.Security.Permissions.SecurityPermissionFlag’s SkipVerification
+flag set. If this flag is set, the JIT compiler will compile the unsafe code and allow it to execute.
+If the flag is noot set, the JIT compiler throws either a System.InvalidProgramException or
+a System.Security.VerificationException, preventing the method from executing. In fact, the
+whole application will probably terminate at this point, but at least no harm can be done.
+
+
+-------
+Ngen'd files can get out of sync :
+
+when the CLR loads  an Ngen'd file it compares  a number of characterstics about the previously compiled code and the current execution environment.
+
+Here is a partial list of characterstics that must match :
+
+- CLR Version
+- CPU Type
+- Windows OS Version
+- Assembly's Identity module version ID (MVID)
+- Refrenced Assembly Version ID
+- Security 
+
+
+Some NGen'd applications actually perform about 5 percent slower when compared to JIT Counter part.
+
+
+
+Considering the use of Ngen.exe.
+For server side appliactions, NGen.exe makes little or no sense because only the first client request experiences a performance hit. future client request runs at high speed.
+
+
+For large client applications that experience very long startup times, Microsoft provides a managed profile Guided Optimization tool[MPGO.exe]

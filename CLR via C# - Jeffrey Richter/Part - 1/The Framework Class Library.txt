@@ -1,0 +1,7 @@
+-----------------------------------
+The Framework Class Library
+-----------------------------------
+
+
+The .NET framework includes the framework class library[FCL]. The FCL is a set of DLL assemblies that contain several thousand type definitions in which each type exposes some functionality.
+
